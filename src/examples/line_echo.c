@@ -16,7 +16,7 @@ int main(void)
   char buf[10];
   int length;
   char endl = '\n';
-
+  
   for ( ; ; )
   {
     length = getline(buf, 10);
@@ -26,10 +26,10 @@ int main(void)
 
     if (length < 1)
       break;
-    
+  
     write(STDOUT_FILENO, buf, length);
     write(STDOUT_FILENO, &endl, 1);
-  }
+     }
   
   return 0;
 }
