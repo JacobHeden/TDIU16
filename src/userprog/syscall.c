@@ -91,30 +91,30 @@ int s_write(int32_t* esp)
     return -1;
   
 }
-
+//Fråga om Read :))))
 int s_read(int32_t* esp)
 {
    int fd = (int*) esp[1];
   char *buffer = (char*) esp[2];
   int size = (int*) esp[3];
+  int test; //Skriv ut på skärmen mha putchar.. 
   if(fd== STDIN_FILENO)
     {
-      int count = 0;
-      for(count;count <= size;count++)
+      int count;
+      for(count=0;count < size;count++)
 	{
+	  // printf("size: %i \n ",count); Debugg
 	  uint8_t key = input_getc();
-	  char * p_key;
 	  if(key == 13)
 	    {
 	      buffer[count] = '\n';
-	      p_key = '\n';
 	    }
 	  else
 	    {
 	      buffer[count]= key;
-	      p_key = key;
 	    }
-	  putbuf(buffer,1); //Se whats pressed writes doubles so not so nice
+	  //	  putbuf(buffer,1); //Se whats pressed writes doubles so not so nice
+	  test = putchar(key); //Se whats pressed faster!!!!.
 	}
       return size;
     }
