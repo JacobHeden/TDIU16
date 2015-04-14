@@ -66,6 +66,7 @@ syscall_handler (struct intr_frame *f)
     case SYS_EXIT : ;
       char *name = (char*)thread_name(); 
       printf("Exit thread: %s: exit status: %i\n",name ,esp[1]);
+       s_close(esp); 
       thread_exit();
       break;
     case SYS_WRITE :
@@ -147,8 +148,9 @@ int s_write(int32_t* esp)
 	  // Om filen är för liten  tecken < size 
 	  return file_write(write_to, buffer, size);
 	}
-      else
-	{
+      else 
+	{	
+
 	  return -1; // Filen existerar inte eller att vi inte skriver några tecken.
 	}
     }
@@ -175,7 +177,8 @@ int s_read(int32_t* esp)
 	    {
 	      buffer[count] = '\n';
 	    }
-	  else
+	  else  
+
 	    {
 	      buffer[count]= key;
 	    }
@@ -205,7 +208,13 @@ int s_open(int32_t* esp)
     {
       // Mata in pekaren till filen i mapen
       // filemap finns initierad i thread.h/c
-      return map_insert(get_filemap(), temp); // returnerar värdet i mapen
+      unsigned int t = map_insert(get_filemap(), temp); // returnerar värdet i mapen
+      if (t == MAP_SIZE){
+	filesys_close(temp);
+	return -1;
+      }
+      else
+	return t;
     }
   return -1; // filen fanns inte
 }

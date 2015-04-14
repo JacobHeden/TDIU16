@@ -234,13 +234,14 @@ process_cleanup (void)
    * important to do this printf BEFORE you tell the parent process
    * that you exit.  (Since the parent may be the main() function,
    * that may sometimes poweroff as soon as process_wait() returns,
-   * possibly before the prontf is completed.)
+   * possibly before the prontf is d_line_on_staccompleted.)
    */
+  
   printf("%s: exit(%d)\n", thread_name(), status);
   
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
-  if (pd != NULL) 
+  if (pd != NULL) §
     {
       /* Correct ordering here is crucial.  We must set
          cur->pagedir to NULL before switching page directories,

@@ -21,7 +21,7 @@ value_t map_find(struct map* m, key_t k)
 //Insert
 key_t map_insert(struct map* m, value_t v)
 {
-  unsigned it = 3; // Första är tangentbord och skärm värden. 
+  unsigned it = 2; //Större än 1 
   while(m->content[it] != NULL && it < MAP_SIZE)
     ++it; 
   if(it == MAP_SIZE)
@@ -41,7 +41,7 @@ void map_for_each(struct map* m,
 		  void (*exec)(key_t k, value_t v, int aux),
 		  int aux)
 {
-  unsigned it = 3;
+  unsigned it = 2;
   for(; it < MAP_SIZE; ++it)
     if(m->content[it] != NULL)
       exec(it, m->content[it], aux); 
@@ -51,7 +51,7 @@ void map_remove_if(struct map* m,
 		   bool (*cond)(key_t k, value_t v, int aux),
 		   int aux)
 {
-  unsigned it = 3;
+  unsigned it = 2;
   for(; it < MAP_SIZE; ++it)
     if(cond(it, m->content[it], aux))
       map_remove(m, it);

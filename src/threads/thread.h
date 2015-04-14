@@ -96,7 +96,7 @@ struct thread
     struct list_elem elem;              /* List element. */
 
     /* YES! You may want to add stuff. But make note of point 2 above. */
- struct map filemap; // filemap;// = malloc(sizeof(struct map*)); // Initieras i init_thread i thread.c
+    struct map filemap; //Filmap 
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
