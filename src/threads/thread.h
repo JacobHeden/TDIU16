@@ -7,6 +7,7 @@
 
 #include "userprog/flist.h"
 
+
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -95,6 +96,7 @@ struct thread
     struct list_elem elem;              /* List element. */
 
     /* YES! You may want to add stuff. But make note of point 2 above. */
+ struct map filemap; // filemap;// = malloc(sizeof(struct map*)); // Initieras i init_thread i thread.c
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
