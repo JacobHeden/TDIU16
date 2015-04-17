@@ -17,6 +17,7 @@
 #include "threads/synch.h"
 #include "threads/malloc.h"
 #include "lib/kernel/list.h"
+#include "lib/string.h"
 
 #include "userprog/flist.h"
 #include "userprog/plist.h"
@@ -91,8 +92,7 @@ process_execute (const char *command_line)
   process_id = thread_id;
 
   /* AVOID bad stuff by turning off. YOU will fix this! */
-  power_off();
-  
+  power_off(); 
   
   /* WHICH thread may still be using this right now? */
   free(arguments.command_line);
@@ -114,7 +114,6 @@ start_process (struct parameters_to_start_process* parameters)
   /* The last argument passed to thread_create is received here... */
   struct intr_frame if_;
   bool success;
-
   char file_name[64];
   strlcpy_first_word (file_name, parameters->command_line, 64);
   
@@ -148,8 +147,8 @@ start_process (struct parameters_to_start_process* parameters)
        C-function expects the stack to contain, in order, the return
        address, the first argument, the second argument etc. */
     
-    HACK if_.esp -= 12; /* Unacceptable solution. */
-
+    //  HACK if_.esp -= 12; /* Unacceptable solution. */
+    if_.esp =  setup_main_stack(parameters->command_line, PHYS_BASE);
     /* The stack and stack pointer should be setup correct just before
        the process start, so this is the place to dump stack content
        for debug purposes. Disable the dump when it works. */
@@ -190,7 +189,6 @@ start_process (struct parameters_to_start_process* parameters)
    child of the calling process, or if process_wait() has already been
    successfully called for the given `child_id', return -1
    immediately, without waiting.
-
    This function will be implemented last, after a communication
    mechanism between parent and child is established. */
 int
@@ -213,7 +211,6 @@ process_wait (int child_id)
    process resources is always done. That is correct behaviour. But
    know that thread_exit() is called at many places inside the kernel,
    mostly in case of some unrecoverable error in a thread.
-
    In such case it may happen that some data is not yet available, or
    initialized. You must make sure that nay data needed IS available
    or initialized to something sane, or else that any such situation
@@ -236,12 +233,14 @@ process_cleanup (void)
    * that may sometimes poweroff as soon as process_wait() returns,
    * possibly before the prontf is d_line_on_staccompleted.)
    */
-  
+
+  map_remove_if(&cur->filemap, close_helper, 0);
   printf("%s: exit(%d)\n", thread_name(), status);
-  
+
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
-  if (pd != NULL) §
+  
+    if(pd !=NULL) 
     {
       /* Correct ordering here is crucial.  We must set
          cur->pagedir to NULL before switching page directories,
@@ -274,3 +273,127 @@ process_activate (void)
   tss_update ();
 }
 
+
+struct main_args
+{
+  /* Hint: When try to interpret C-declarations, read from right to
+   * left! It is often easier to get the correct interpretation,
+   * altough it does not always work. */
+
+  /* Variable "ret" that stores address (*ret) to a function taking no
+   * parameters (void) and returning nothing. */
+  void (*ret)(void);
+
+  /* Just a normal integer. */
+  int argc;
+  
+  /* Variable "argv" that stores address to an address storing char.
+   * That is: argv is a pointer to char*
+   */
+  char** argv;
+};
+
+
+/* Return true if 'c' is fount in the c-string 'd'
+ * NOTE: 'd' must be a '\0'-terminated c-string
+ */
+bool exists_in(char c, const char* d)
+{
+  int i = 0;
+  while (d[i] != '\0' && d[i] != c)
+    ++i;
+  return (d[i] == c);
+}
+
+/* Return the number of words in 'buf'. A word is defined as a
+ * sequence of characters not containing any of the characters in
+ * 'delimeters'.
+ * NOTE: arguments must be '\0'-terminated c-strings
+ */
+
+int count_args(const char* buf, const char* delimeters)
+{
+  int i = 0;
+  bool prev_was_delim;
+  bool cur_is_delim = true;
+  int argc = 0;
+
+  while (buf[i] != '\0')
+  {
+    prev_was_delim = cur_is_delim;
+    cur_is_delim = exists_in(buf[i], delimeters);
+    argc += (prev_was_delim && !cur_is_delim);
+    ++i;
+  }
+  return argc;
+}
+
+
+#define STACK_DEBUG(...) printf(__VA_ARGS__)
+void* setup_main_stack(const char* command_line, void* stack_top)
+{
+  /* Variable "esp" stores an address, and at the memory loaction
+   * pointed out by that address a "struct main_args" is found.
+   * That is: "esp" is a pointer to "struct main_args" */
+  struct main_args* esp;
+  int argc;
+  int total_size;
+  int line_size;
+  /* "cmd_line_on_stack" and "ptr_save" are variables that each store
+   * one address, and at that address (the first) char (of a possible
+   * sequence) can be found. */
+  char* cmd_line_on_stack;
+  int i = 0;
+  
+  /* calculate the bytes needed to store the command_line */
+  line_size = strlen(command_line)+1; //Kanske ska vara +1 om vi vill att sista /0 ska räknas
+  STACK_DEBUG("# line_size = %d\n", line_size);
+  //printf("%i\n", line_size);
+  /* round up to make it even divisible by 4 */
+  while(line_size %4 != 0)
+    ++line_size;
+  
+  // printf("%i\n", line_size);
+  STACK_DEBUG("# line_size (aligned) = %d\n", line_size);
+
+  STACK_DEBUG("# command_line = %s\n", command_line);
+  /* calculate how many words the command_line contain */
+  argc = count_args(command_line, " ");
+  STACK_DEBUG("# argc = %d\n", argc);
+   printf("%i\n", argc);
+  /* calculate the size needed on our simulated stack */
+  
+   total_size = line_size +((4+argc)*4);
+  STACK_DEBUG("# total_size = %d\n", total_size);
+  
+  /* calculate where the final stack top will be located */
+  esp = (int)stack_top - (total_size +4);
+  printf("# esp = %08x\n", (unsigned)esp);
+  /* setup return address and argument count */
+   esp->ret = 0x00;
+  esp->argc = argc;
+  /* calculate where in the memory the argv array starts */
+  esp->argv = (char**)((int)esp+12);
+    printf("# esp = %08x\n", (unsigned)esp->argv);
+
+  /* calculate where in the memory the words is stored */
+    cmd_line_on_stack = (char*)((int)esp->argv+((2+argc)*4));
+   printf("# esp = %08x\n", (unsigned)cmd_line_on_stack);
+			
+   /* copy the command_line to where it should be in the stack */
+   char* token;
+   char *save_ptr;
+   char* orig = command_line;
+   for (token = strtok_r (orig, " ", &save_ptr); token != NULL;
+	token = strtok_r (NULL, " ", &save_ptr)){
+     printf ("’%s’\n", token);   
+     strlcpy(cmd_line_on_stack, token, strlen(token)+1);
+     esp->argv[i] = cmd_line_on_stack; //Lägger på rätt arg
+     cmd_line_on_stack += strlen(token); // Nästa arg hoppar ordländen.
+     *cmd_line_on_stack = '\0'; //Lägger till sträng avslut
+     ++cmd_line_on_stack;  // Och räkmar upp till nästa ord
+     ++i;
+ }
+  /* build argv array and insert null-characters after each word */
+  return esp; /* the new stack top */
+}

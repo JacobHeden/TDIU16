@@ -57,4 +57,9 @@ void map_remove_if(struct map* m,
       map_remove(m, it);
 }
 
-
+bool close_helper(key_t k UNUSED, value_t v, int aux UNUSED)
+{
+  filesys_close(v);
+  
+  return true;
+}

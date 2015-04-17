@@ -57,4 +57,6 @@ void map_remove_if(struct map* m,
 bool (*cond)(key_t k, value_t v, int aux),
 int aux);
 
+bool close_helper(key_t k, value_t v, int aux);
+
 #endif
