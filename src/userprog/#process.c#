@@ -76,7 +76,7 @@ process_execute (const char *command_line)
   /* LOCAL variable will cease existence when function return! */
   struct parameters_to_start_process arguments;
   //  arguments.parentID = thread_current()->tid;
-  //init Semaphoren
+  //initerar Semaphoren
   sema_init(&arguments.sema,0); 
   debug("%s#%d: process_execute(\"%s\") ENTERED\n",
         thread_current()->name,
@@ -187,7 +187,8 @@ start_process (struct parameters_to_start_process* parameters)
   */
   if ( ! success )
   {
-    sema_up(&parameters->sema); //Frigör 
+    sema_up(&parameters->sema);
+    thread_exit ();
   }
   sema_up(&parameters->sema);
   /* Start the user process by simulating a return from an interrupt,
@@ -250,7 +251,7 @@ process_cleanup (void)
    * possibly before the prontf is d_line_on_staccompleted.)
    */
 
-  map_remove_if(&cur->filemap, close_helper, 0);
+  map_remove_if(&cur->filemap, clear_map, 0);
   printf("%s: exit(%d)\n", thread_name(), status);
 
   /* Destroy the current process's page directory and switch back

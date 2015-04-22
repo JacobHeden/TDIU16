@@ -251,7 +251,7 @@ process_cleanup (void)
    * possibly before the prontf is d_line_on_staccompleted.)
    */
 
-  map_remove_if(&cur->filemap, close_helper, 0);
+  map_remove_if(&cur->filemap, clear_map, 0);
   printf("%s: exit(%d)\n", thread_name(), status);
 
   /* Destroy the current process's page directory and switch back

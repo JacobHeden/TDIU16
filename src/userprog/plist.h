@@ -29,5 +29,46 @@
      
  */
 
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stddef.h>
+typedef  int pid;
+typedef struct table_ele* table_value;
+#define MAP_SIZE 128
+
+//Elementen som ska läggas till i proc tabelen. 
+struct table_ele
+{
+  int proc_id;
+  int parent_id;
+  int exit_status;
+  bool alive;
+  bool parent_avlive;
+  // char* name; // Kan behövas du de vill att man skriver ut name
+};
+
+
+
+struct proc_map
+{
+table_value content[MAP_SIZE];
+};
+
+
+void proc_map_init(struct proc_map* m);
+table_value proc_map_find(struct proc_map* m, pid k);
+int proc_map_insert(struct proc_map* m, table_value v);
+table_value proc_map_remove(struct proc_map* m, pid k);
+
+void proc_map_for_each(struct proc_map* m,
+void (*exec)(int k, table_value v, int aux),
+int aux);
+
+void proc_map_remove_if(struct proc_map* m,
+bool (*cond)(int k, table_value v, int aux),
+int aux);
+
 
 #endif
+
+

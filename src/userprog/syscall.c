@@ -241,11 +241,10 @@ bool s_remove(int32_t* esp)
 void s_close(int32_t* esp)
 {
   int fd = (int*) esp[1];
-  struct file* close_file = map_find(get_filemap(), fd);
+  struct file* close_file = map_find(get_filemap(), fd);//Kollar om den finns först
   if(close_file != NULL)
     {
-      filesys_close(close_file);
-      map_remove(get_filemap(), fd); //Viktigt att det tas bort från mapen. 
+      map_remove(get_filemap(), fd);  
     }
 }
 
