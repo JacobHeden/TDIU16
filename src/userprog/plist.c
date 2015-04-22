@@ -27,7 +27,8 @@ int proc_map_insert(struct proc_map* m, table_value v)
 
   if(i == MAP_SIZE)
     return MAP_SIZE; //Om mappen är full 
-
+ 
+  v->proc_id = i; 
   m->content[i] = v;
   return i; // Index där det läggs in 
 }
@@ -36,17 +37,13 @@ table_value proc_map_remove(struct proc_map* m, pid k)
 {
   table_value return_value = NULL;
  
-
-  unsigned i = 0;
-  for(; i < MAP_SIZE; ++i)
-    {
-      if(m->content[i] != NULL && m->content[i]->proc_id == k)
+      if(m->content[k] != NULL)
 	{
-	  return_value = m->content[i];
-	  m->content[i] = NULL; // Tar bort nyckeln. 
+	  return_value = m->content[k];
+	  m->content[k] = NULL; // Tar bort nyckeln. 
 	  return return_value;
 	}
-    }
+    
 
 
  return NULL;
@@ -72,7 +69,7 @@ void proc_map_remove_if(struct proc_map* m,
   for(; i < MAP_SIZE; ++i)
     {
       if(cond(i, m->content[i], aux))
-	proc_map_remove(m, aux); //Om aux är process id. dvs current_tid. 
+	 m->content[i] = NULL; //Om aux är process id. dvs current_tid. 
     }
 }
 

@@ -96,6 +96,7 @@ struct thread
     struct list_elem elem;              /* List element. */
 
     /* YES! You may want to add stuff. But make note of point 2 above. */
+    int pid;  //Process id
     struct map filemap; //Filmap 
 
 #ifdef USERPROG
