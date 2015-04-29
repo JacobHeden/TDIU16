@@ -32,6 +32,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stddef.h>
+
+#include "threads/synch.h" //för locks
+
 typedef  int pid;
 typedef struct table_ele* table_value;
 #define MAP_SIZE 128
@@ -43,7 +46,9 @@ struct table_ele
   int parent_id;
   int exit_status;
   bool alive;
-  bool parent_avlive;
+  bool parent_alive;
+  struct semaphore wait;
+  char* thread_name;
   // char* name; // Kan behövas du de vill att man skriver ut name
 };
 
@@ -52,6 +57,8 @@ struct table_ele
 struct proc_map
 {
 table_value content[MAP_SIZE];
+
+  struct lock proc_lock;
 };
 
 
@@ -67,6 +74,8 @@ int aux);
 void proc_map_remove_if(struct proc_map* m,
 bool (*cond)(int k, table_value v, int aux),
 int aux);
+
+void print_element(int i, table_value v, int aux);
 
 
 #endif

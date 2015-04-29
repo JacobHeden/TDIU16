@@ -182,4 +182,13 @@ inumber (int fd)
 {
   return syscall1 (SYS_INUMBER, fd);
 }
+/*Waoaoaow0 */
+void sleep(int millis)
+{
+  syscall1 (SYS_SLEEP, millis);
+}
 
+void plist(void)
+{
+  syscall0 (SYS_PLIST);
+}

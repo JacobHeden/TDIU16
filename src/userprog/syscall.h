@@ -3,4 +3,8 @@
 
 void syscall_init (void);
 
+
+
+void s_sleep(int millis);
+
 #endif /* userprog/syscall.h */

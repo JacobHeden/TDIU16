@@ -14,8 +14,11 @@
 #include "userprog/process.h"
 #include "devices/input.h"
 #include "userprog/flist.h" // map
+#include "devices/timer.h" //Timer that are use in s_sleep
 
 static void syscall_handler (struct intr_frame *);
+
+
 int s_write(int32_t* esp);
 int s_read(int32_t* esp);
 //File open create etc read and wirte to a bit. 
@@ -27,6 +30,11 @@ void s_seek(int fd, unsigned position);
 unsigned s_tell (int fd);
 int s_filesize(int fd);
 struct map* get_filemap(void);
+
+int s_exec(const char* c); //Ej testad
+//void s_sleep(int millis);//
+void s_plist(void);
+
 
 void
 syscall_init (void) 
@@ -66,7 +74,8 @@ syscall_handler (struct intr_frame *f)
     case SYS_EXIT : ;
       char *name = (char*)thread_name(); 
       printf("Exit thread: %s: exit status: %i\n",name ,esp[1]);
-       s_close(esp); 
+      //s_close(esp); Ska ske i process cleanup.  
+       process_exit( (int) esp[1]);
       thread_exit();
       break;
     case SYS_WRITE :
@@ -78,11 +87,9 @@ syscall_handler (struct intr_frame *f)
     case SYS_OPEN:
       f->eax = s_open(esp);
       break;
-
     case SYS_CREATE:
       f->eax = s_create(esp);
-      break;
-	
+      break;	
     case SYS_REMOVE:
       {
 	if((char*)esp[1] != NULL)
@@ -110,6 +117,26 @@ syscall_handler (struct intr_frame *f)
       {
 	f->eax = s_filesize(esp[1]);	
 	break;
+      }
+    case SYS_EXEC:
+      {
+	f->eax = s_exec((char*) esp[1]);
+	break;
+      }
+    case SYS_SLEEP:
+      {
+	s_sleep((int) esp[1]);
+	break;
+      } 
+    case SYS_PLIST:
+      {
+	s_plist();
+	break;
+      }
+    case SYS_WAIT:
+      {
+	f->eax = s_wait((int) esp[1]);
+        break;
       }
     default:
       {
@@ -162,7 +189,7 @@ int s_read(int32_t* esp)
   int fd = (int*) esp[1];
   char *buffer = (char*) esp[2];
   int size = (int*) esp[3];
-  int test; //för att använda putchar. 
+  //int test; //för att använda putchar. 
   if (fd == STDOUT_FILENO)
     return -1; // Vi kan inte läsa från skärmen  
 
@@ -183,7 +210,7 @@ int s_read(int32_t* esp)
 	      buffer[count]= key;
 	    }
 	  //	  putbuf(buffer,1); //Se whats pressed writes doubles so not so nice
-	  test = putchar(key); //Se whats pressed faster!!!!.
+	   putchar(key); //Se whats pressed faster!!!!. test = blabaslas
 	}
       else
 	{
@@ -224,7 +251,7 @@ bool s_create(int32_t* esp)
 {
   char* name = (char*) esp[1];
   unsigned size = (unsigned) esp[2];
-  if (filesys_create(name, size) && size >= 0) // Om det går att skapa en fil 
+  if (filesys_create(name, size)) // Om det går att skapa en fil && size >= 0
     {
       map_insert(get_filemap(), filesys_open(name));
       return true;
@@ -277,4 +304,26 @@ int s_filesize(int fd)
 struct map* get_filemap()
 {
   return &thread_current()->filemap; //.node;
+}
+
+
+int s_exec(const char* c)
+{
+  return process_execute(c);
+}
+
+void s_sleep(int millis)
+{
+  timer_msleep ((int64_t) millis); //Finns i device timer.c/h Magik!!! 
+}
+
+void s_plist(void)
+{
+  process_print_list();
+}
+
+int s_wait(int child_id)
+{
+  printf("CHILD ID::: %d\n", child_id);
+  return process_wait(child_id);
 }

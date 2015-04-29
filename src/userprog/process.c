@@ -20,16 +20,18 @@
 #include "lib/string.h"
 
 #include "userprog/flist.h"
-#include "userprog/plist.h"
+
+#include "userprog/syscall.h"
 
 /* HACK defines code you must remove and implement in a proper way */
 #define HACK
-
+struct proc_map process_table; //Global process tabell. 
 
 /* This function is called at boot time (threads/init.c) to initialize
  * the process subsystem. */
 void process_init(void)
 {
+  proc_map_init(&process_table); //Initierar process tabllen. 
 }
 
 /* This function is currently never called. As thread_exit does not
@@ -37,14 +39,33 @@ void process_init(void)
  * instead. Note however that all cleanup after a process must be done
  * in process_cleanup, and that process_cleanup are already called
  * from thread_exit - do not call cleanup twice! */
-void process_exit(int status UNUSED)
+void process_exit(int status)
 {
+  proc_map_for_each(&process_table, update_table, status);
+
 }
+void update_table(int i UNUSED, table_value v, int aux )
+{
+  if(v->proc_id == thread_current()->pid) // Sätter exit statusen i tabellen
+     {
+       printf("#Exit status set: %i\n", aux);
+      v->alive = false;
+      v->exit_status = aux;
+     }
+
+  if(v->parent_id == thread_current()->pid) // Om parent dör!!! OMG
+    {
+      v->parent_alive = false;
+    }
+ }
 
 /* Print a list of all running processes. The list shall include all
  * relevant debug information in a clean, readable format. */
 void process_print_list()
 {
+  printf("ProcessID:ParentID:ProcessAlive:ParentAlive:ExitStatus \n");
+  proc_map_for_each(&process_table, print_element, 0);
+  
 }
 
 
@@ -52,7 +73,7 @@ struct parameters_to_start_process
 {
   char* command_line;
   struct semaphore sema;
-  //int parentID; 
+  int parentID; 
   bool loaded;  
 };
 
@@ -75,9 +96,10 @@ process_execute (const char *command_line)
 
   /* LOCAL variable will cease existence when function return! */
   struct parameters_to_start_process arguments;
-  //  arguments.parentID = thread_current()->tid;
+  arguments.parentID = thread_current()->pid;
   //init Semaphoren
   sema_init(&arguments.sema,0); 
+ 
   debug("%s#%d: process_execute(\"%s\") ENTERED\n",
         thread_current()->name,
         thread_current()->tid,
@@ -94,12 +116,12 @@ process_execute (const char *command_line)
   thread_id = thread_create (debug_name, PRI_DEFAULT,
                              (thread_func*)start_process, &arguments);
 
-  process_id = thread_id;
-  
-  if(process_id != -1)
-    sema_down(&arguments.sema);
- 
-
+     
+  if(thread_id != -1)
+    {
+      sema_down(&arguments.sema);
+      process_id = arguments.parentID;
+    }
  /* AVOID bad stuff by turning off. YOU will fix this! */
   // power_off(); 
   
@@ -109,8 +131,7 @@ process_execute (const char *command_line)
 
   if(!arguments.loaded)
     process_id = -1;
-
-
+ 
 
   debug("%s#%d: process_execute(\"%s\") RETURNS %d\n",
         thread_current()->name,
@@ -153,6 +174,17 @@ start_process (struct parameters_to_start_process* parameters)
   parameters->loaded = success;
   if (success)
   {
+    struct table_ele* temp_e =malloc(sizeof(struct table_ele));
+    temp_e->parent_id = parameters->parentID;
+    temp_e->alive = true;
+    temp_e->parent_alive = true;
+    temp_e->exit_status = -1; //Sätter till -1 ifall den dör oväntat
+    sema_init(&temp_e->wait ,0); 
+    thread_current()->pid = proc_map_insert(&process_table, temp_e);
+    //    printf("THREAD IDDDDDDDDDD: :::: : :: : :%d \n", thread_current()->pid);
+    parameters->parentID = thread_current()->pid;
+    //  process_print_list();
+
     /* We managed to load the new program to a process, and have
        allocated memory for a process stack. The stack top is in
        if_.esp, now we must prepare and place the arguments to main on
@@ -172,6 +204,8 @@ start_process (struct parameters_to_start_process* parameters)
 //    dump_stack ( PHYS_BASE + 15, PHYS_BASE - if_.esp + 16 );
 
   }
+
+
 
   debug("%s#%d: start_process(\"%s\") DONE\n",
         thread_current()->name,
@@ -213,10 +247,24 @@ process_wait (int child_id)
 {
   int status = -1;
   struct thread *cur = thread_current ();
+  
+  table_value child = proc_map_find(&process_table, child_id);
+ 
+  if(child != NULL)
+    {
+      if(child->alive == true)
+	sema_down(&child->wait);
+
+
+      status = child->exit_status;
+      proc_map_remove(&process_table, child_id);
+
+    }
+     process_print_list();
 
   debug("%s#%d: process_wait(%d) ENTERED\n",
         cur->name, cur->tid, child_id);
-  /* Yes! You need to do something good here ! */
+                                                                                                                                   /* Yes! You need to do something good here ! */
   debug("%s#%d: process_wait(%d) RETURNS %d\n",
         cur->name, cur->tid, child_id, status);
   
@@ -251,8 +299,25 @@ process_cleanup (void)
    * possibly before the prontf is d_line_on_staccompleted.)
    */
 
+
+  //   process_print_list();
+
+
+  table_value v = proc_map_find(&process_table, thread_current()->pid);
+  // printf("Checking semaphore and doing sema up");
+  if(v != NULL)
+    {
+      sema_up(&v->wait); // För wait funktion att räkna upp göra den redo !! 
+      status= v->exit_status; //Se till att det är rätt exit_status. 
+    }
+
   map_remove_if(&cur->filemap, clear_map, 0);
-  printf("%s: exit(%d)\n", thread_name(), status);
+  // printf("!!!!!!!!!!!!PROC_MAP_REMOVE_IF !!!!!!!!!!!!!!\n");
+
+  proc_map_remove_if(&process_table, remove_process, thread_current()->pid);  
+  //  process_print_list();
+ 
+  //  printf("%s: exit(%d)\n", thread_name(), status);
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
@@ -272,6 +337,24 @@ process_cleanup (void)
     }  
   debug("%s#%d: process_cleanup() DONE with status %d\n",
         cur->name, cur->tid, status);
+}
+
+
+bool remove_process (int k UNUSED, table_value v, int aux)
+{
+  if(v == NULL)
+    return false;
+
+  if(v->proc_id == aux && v->parent_alive == false)
+    return true;
+  
+  if(!v->alive && (!v->parent_alive))
+    return true;
+
+  if(v->alive || (v->parent_alive)) //Onödig !!MEEEN
+    return false;
+
+  return false;
 }
 
 /* Sets up the CPU for running user code in the current
@@ -377,7 +460,7 @@ void* setup_main_stack(const char* command_line, void* stack_top)
   /* calculate how many words the command_line contain */
   argc = count_args(command_line, " ");
   STACK_DEBUG("# argc = %d\n", argc);
-   printf("%i\n", argc);
+  //printf("%i\n", argc);
   /* calculate the size needed on our simulated stack */
   
    total_size = line_size +((4+argc)*4);
@@ -385,17 +468,17 @@ void* setup_main_stack(const char* command_line, void* stack_top)
   
   /* calculate where the final stack top will be located */
   esp = (int)stack_top - (total_size +4);
-  printf("# esp = %08x\n", (unsigned)esp);
+  //printf("# esp = %08x\n", (unsigned)esp);
   /* setup return address and argument count */
    esp->ret = 0x00;
   esp->argc = argc;
   /* calculate where in the memory the argv array starts */
   esp->argv = (char**)((int)esp+12);
-    printf("# esp = %08x\n", (unsigned)esp->argv);
+  // printf("# esp = %08x\n", (unsigned)esp->argv);
 
   /* calculate where in the memory the words is stored */
     cmd_line_on_stack = (char*)((int)esp->argv+((2+argc)*4));
-   printf("# esp = %08x\n", (unsigned)cmd_line_on_stack);
+    //printf("# esp = %08x\n", (unsigned)cmd_line_on_stack);
 			
    /* copy the command_line to where it should be in the stack */
    char* token;
@@ -403,7 +486,7 @@ void* setup_main_stack(const char* command_line, void* stack_top)
    char* orig = command_line;
    for (token = strtok_r (orig, " ", &save_ptr); token != NULL;
 	token = strtok_r (NULL, " ", &save_ptr)){
-     printf ("’%s’\n", token);   
+     //printf ("’%s’\n", token);   
      strlcpy(cmd_line_on_stack, token, strlen(token)+1);
      esp->argv[i] = cmd_line_on_stack; //Lägger på rätt arg
      cmd_line_on_stack += strlen(token); // Nästa arg hoppar ordländen.
