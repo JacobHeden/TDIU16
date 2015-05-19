@@ -73,9 +73,9 @@ syscall_handler (struct intr_frame *f)
       break; 
     case SYS_EXIT : ;
       char *name = (char*)thread_name(); 
-      printf("Exit thread: %s: exit status: %i\n",name ,esp[1]);
+      //printf("Exit thread: %s: exit status: %i\n",name ,esp[1]);
       //s_close(esp); Ska ske i process cleanup.  
-       process_exit( (int) esp[1]);
+      process_exit( (int) esp[1]);
       thread_exit();
       break;
     case SYS_WRITE :
@@ -140,10 +140,10 @@ syscall_handler (struct intr_frame *f)
       }
     default:
       {
-	printf ("Executed an unknown system call!\n");
+	//printf ("Executed an unknown system call!\n");
       
-	printf ("Stack top + 0: %d\n", esp[0]);
-	printf ("Stack top + 1: %d\n", esp[1]);
+	//printf ("Stack top + 0: %d\n", esp[0]);
+	//printf ("Stack top + 1: %d\n", esp[1]);
       
 	thread_exit ();
       }
@@ -324,6 +324,6 @@ void s_plist(void)
 
 int s_wait(int child_id)
 {
-  printf("CHILD ID::: %d\n", child_id);
+  //printf("CHILD ID::: %d\n", child_id);
   return process_wait(child_id);
 }

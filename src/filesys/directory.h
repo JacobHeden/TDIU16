@@ -13,6 +13,10 @@
 
 struct inode;
 
+/* Added in lab 20 to init a lock */
+void directory_init(); // need to be in threads init. 
+
+
 /* Opening and closing directories. */
 bool dir_create (disk_sector_t sector, size_t entry_cnt);
 struct dir *dir_open (struct inode *);
@@ -26,5 +30,6 @@ bool dir_lookup (const struct dir *, const char *name, struct inode **);
 bool dir_add (struct dir *, const char *name, disk_sector_t);
 bool dir_remove (struct dir *, const char *name);
 bool dir_readdir (struct dir *, char name[NAME_MAX + 1]);
+
 
 #endif /* filesys/directory.h */

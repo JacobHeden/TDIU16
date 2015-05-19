@@ -118,6 +118,7 @@ main (void)
   /* Initialize file system. */
   disk_init ();
   filesys_init (format_filesys);
+  directory_init(); // added in lab 20
 #endif
 
   printf ("Boot complete.\n");
@@ -128,10 +129,10 @@ main (void)
   /* Finish up. */
   if (power_off_when_done)
     power_off ();
-  
+  // printf("EXITING THREAD");
   thread_exit ();
+  // printf("EXITING THREAD2");
 }
-
 /* Clear BSS and obtain RAM size from loader. */
 static void
 ram_init (void) 

@@ -12,6 +12,8 @@
 /* Identifies an inode. */
 #define INODE_MAGIC 0x494e4f44
 
+struct lock inode_lock;
+
 /* On-disk inode.
    Must be exactly DISK_SECTOR_SIZE bytes long. */
 struct inode_disk
@@ -64,6 +66,8 @@ void
 inode_init (void) 
 {
   list_init (&open_inodes);
+
+  lock_init(&inode_lock);
 }
 
 /* Initializes an inode with LENGTH bytes of data and
@@ -77,6 +81,7 @@ inode_create (disk_sector_t sector, off_t length)
   struct inode_disk *disk_inode = NULL;
   bool success = false;
 
+  lock_acquire(&inode_lock);
   ASSERT (length >= 0);
 
   /* If this assertion fails, the inode structure is not exactly
@@ -104,6 +109,9 @@ inode_create (disk_sector_t sector, off_t length)
         } 
       free (disk_inode);
     }
+
+  lock_release(&inode_lock);
+  
   return success;
 }
 
@@ -115,7 +123,7 @@ inode_open (disk_sector_t sector)
 {
   struct list_elem *e;
   struct inode *inode;
-
+   lock_acquire(&inode_lock);
   
   /* Check whether this inode is already open. */
   for (e = list_begin (&open_inodes); e != list_end (&open_inodes);
@@ -124,6 +132,7 @@ inode_open (disk_sector_t sector)
       inode = list_entry (e, struct inode, elem);
       if (inode->sector == sector) 
         {
+	  lock_release(&inode_lock);
           inode_reopen (inode);
           return inode; 
         }
@@ -133,6 +142,7 @@ inode_open (disk_sector_t sector)
   inode = malloc (sizeof *inode);
   if (inode == NULL)
   {
+    lock_release(&inode_lock);
     return NULL;
   }
   
@@ -144,7 +154,7 @@ inode_open (disk_sector_t sector)
   inode->removed = false;
   
   disk_read (filesys_disk, inode->sector, &inode->data);
-  
+  lock_release(&inode_lock);
   return inode;
 }
 
@@ -172,10 +182,12 @@ inode_get_inumber (const struct inode *inode)
 void
 inode_close (struct inode *inode) 
 {
+   lock_acquire(&inode_lock);
   /* Ignore null pointer. */
-  if (inode == NULL)
-    return;
-
+  if (inode == NULL){
+   lock_release(&inode_lock);  
+   return;
+  }
     
   /* Release resources if this was the last opener. */
   if (--inode->open_cnt == 0)
@@ -193,8 +205,10 @@ inode_close (struct inode *inode)
         }
 
       free (inode);
+      lock_release(&inode_lock);
       return;
     }
+   lock_release(&inode_lock);
 }
 
 /* Marks INODE to be deleted when it is closed by the last caller who
@@ -209,6 +223,9 @@ inode_remove (struct inode *inode)
 /* Reads SIZE bytes from INODE into BUFFER, starting at position OFFSET.
    Returns the number of bytes actually read, which may be less
    than SIZE if an error occurs or end of file is reached. */
+
+/*Känns inte som lock behövs för den här eftersom den enbart 
+  kollar bytesen inte säker dock. */
 off_t
 inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset) 
 {

@@ -48,7 +48,7 @@ void update_table(int i UNUSED, table_value v, int aux )
 {
   if(v->proc_id == thread_current()->pid) // Sätter exit statusen i tabellen
      {
-       printf("#Exit status set: %i\n", aux);
+      //printf("#Exit status set: %i\n", aux);
       v->alive = false;
       v->exit_status = aux;
      }
@@ -63,7 +63,7 @@ void update_table(int i UNUSED, table_value v, int aux )
  * relevant debug information in a clean, readable format. */
 void process_print_list()
 {
-  printf("ProcessID:ParentID:ProcessAlive:ParentAlive:ExitStatus \n");
+  printf("ProcessID\t ParentID\t ProcessAlive\t ParentAlive\t ExitStatus \n");
   proc_map_for_each(&process_table, print_element, 0);
   
 }
@@ -99,7 +99,7 @@ process_execute (const char *command_line)
   arguments.parentID = thread_current()->pid;
   //init Semaphoren
   sema_init(&arguments.sema,0); 
- 
+  arguments.loaded = false;
   debug("%s#%d: process_execute(\"%s\") ENTERED\n",
         thread_current()->name,
         thread_current()->tid,
@@ -182,7 +182,7 @@ start_process (struct parameters_to_start_process* parameters)
     sema_init(&temp_e->wait ,0); 
     thread_current()->pid = proc_map_insert(&process_table, temp_e);
     //    printf("THREAD IDDDDDDDDDD: :::: : :: : :%d \n", thread_current()->pid);
-    parameters->parentID = thread_current()->pid;
+    parameters->parentID = thread_current()->pid; //Sätter proc id
     //  process_print_list();
 
     /* We managed to load the new program to a process, and have
@@ -202,7 +202,6 @@ start_process (struct parameters_to_start_process* parameters)
        for debug purposes. Disable the dump when it works. */
     
 //    dump_stack ( PHYS_BASE + 15, PHYS_BASE - if_.esp + 16 );
-
   }
 
 
@@ -224,6 +223,7 @@ start_process (struct parameters_to_start_process* parameters)
     sema_up(&parameters->sema);
     thread_exit ();
   }
+
   sema_up(&parameters->sema);
   /* Start the user process by simulating a return from an interrupt,
      implemented by intr_exit (in threads/intr-stubs.S). Because
@@ -246,28 +246,34 @@ int
 process_wait (int child_id) 
 {
   int status = -1;
+
   struct thread *cur = thread_current ();
-  
+ 
+  debug("%s#%d: process_wait(%d) ENTERED\n",
+        cur->name, cur->pid, child_id);
+
   table_value child = proc_map_find(&process_table, child_id);
  
-  if(child != NULL)
+  if(child == NULL || cur->pid == -1) //Fins den i listan?
     {
-      if(child->alive == true)
-	sema_down(&child->wait);
-
-
-      status = child->exit_status;
-      proc_map_remove(&process_table, child_id);
+      // if(child->alive == true)
+      status = -1;
 
     }
-     process_print_list();
+  else if(child->parent_id != cur->pid) //Förälder? 
+    status = -1;
+  else 
+    {
+      sema_down(&child->wait); //Semadown // Wait
+      
+      status = child->exit_status;
+      proc_map_remove(&process_table, child_id);
+    }
 
-  debug("%s#%d: process_wait(%d) ENTERED\n",
-        cur->name, cur->tid, child_id);
-                                                                                                                                   /* Yes! You need to do something good here ! */
+  /* Yes! You need to do something good here ! */
   debug("%s#%d: process_wait(%d) RETURNS %d\n",
-        cur->name, cur->tid, child_id, status);
-  
+        cur->name, cur->tid, child_id, status);  
+
   return status;
 }
 
@@ -300,7 +306,7 @@ process_cleanup (void)
    */
 
 
-  //   process_print_list();
+  process_print_list();
 
 
   table_value v = proc_map_find(&process_table, thread_current()->pid);
@@ -309,15 +315,16 @@ process_cleanup (void)
     {
       sema_up(&v->wait); // För wait funktion att räkna upp göra den redo !! 
       status= v->exit_status; //Se till att det är rätt exit_status. 
+      //      v->alive = false;
     }
 
   map_remove_if(&cur->filemap, clear_map, 0);
   // printf("!!!!!!!!!!!!PROC_MAP_REMOVE_IF !!!!!!!!!!!!!!\n");
-
   proc_map_remove_if(&process_table, remove_process, thread_current()->pid);  
-  //  process_print_list();
+
+  //process_print_list();
  
-  //  printf("%s: exit(%d)\n", thread_name(), status);
+    //printf("%s: exit(%d)\n", thread_name(), status);
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
@@ -337,22 +344,46 @@ process_cleanup (void)
     }  
   debug("%s#%d: process_cleanup() DONE with status %d\n",
         cur->name, cur->tid, status);
+
+  process_print_list();
 }
 
 
 bool remove_process (int k UNUSED, table_value v, int aux)
 {
-  if(v == NULL)
-    return false;
 
-  if(v->proc_id == aux && v->parent_alive == false)
+  if(v == NULL) {
+    return false;
+  }
+
+  if(v->proc_id == aux) { //Sätter tråden till död ifall det skulle avsultas fel
+    printf("PROCID =%i\n", v->proc_id);
+    v->alive = false;
+  }  
+
+  if(v->parent_id == aux) { //Uppdaterar förälder status. 
+    printf("PARENTID AUX\n");
+    v->parent_alive = false;
+  }
+
+  if(!v->alive && v->parent_id == -1) { //Undantag för kernel tråd!!! Bra eller ej?
+    printf("KERNELTRÅD%i\n", v->proc_id);
     return true;
+  }
+  if(v->proc_id == aux && v->parent_alive == false) {
+    printf("SKA TAS BORTA%i\n", v->proc_id);
+    return true;
+  }
   
-  if(!v->alive && (!v->parent_alive))
+  if(!v->alive && (!v->parent_alive)) {//Kollar alla andra 
+    printf("SKA TAS BORTB%i\n", v->proc_id);
     return true;
+  }
 
-  if(v->alive || (v->parent_alive)) //Onödig !!MEEEN
+  if(v->alive || (v->parent_alive)) { //Onödig !!MEEEN
+    printf("SKA INTE TAS BORT%i\n", v->proc_id);
     return false;
+  }
 
   return false;
 }
@@ -494,6 +525,7 @@ void* setup_main_stack(const char* command_line, void* stack_top)
      ++cmd_line_on_stack;  // Och räkmar upp till nästa ord
      ++i;
  }
-  /* build argv array and insert null-characters after each word */
+  /* build argv array and iERROR: Main thread about to poweroff with 3 other threads still running!
+nsert null-characters after each word */
   return esp; /* the new stack top */
 }

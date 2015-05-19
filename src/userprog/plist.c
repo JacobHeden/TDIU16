@@ -14,7 +14,10 @@ void proc_map_init(struct proc_map* m)
 //Söker i mapen med hjälp av nyckeln
 table_value proc_map_find(struct proc_map* m, pid k)
 {
+  // printf("TEST");
   lock_acquire(&m->proc_lock);
+  // printf("TEST");
+
 
   if(k > 0 && k < MAP_SIZE)
     {
@@ -27,6 +30,7 @@ table_value proc_map_find(struct proc_map* m, pid k)
 
       return NULL;
     }
+    lock_release(&m->proc_lock);
 
 }
 
@@ -47,7 +51,7 @@ int proc_map_insert(struct proc_map* m, table_value v)
   m->content[i] = v;
         
   lock_release(&m->proc_lock);
-  printf("PROC ID::::::: %d", i);
+  //printf("PROC ID::::::: %d", i);
   return i; // Index där det läggs in 
 }
 //Kan var en del overhead vill man ha mindre måste pid läggas i thread 
@@ -115,10 +119,11 @@ void proc_map_remove_if(struct proc_map* m,
 //UNUSED så att man inte får waring unused parameter!!!!! !!! ! !! 
 void print_element(int i UNUSED, table_value v, int aux UNUSED)
 {
-   printf("%i\t  %i\t   %s\t %s\t\t %i \n",
+  //MAGIC !!! !! !  !!  !! \t\t\t
+   printf("%i\t\t  %i\t\t   %s\t %s\t\t %i \n",
 	  v->proc_id,
 	  v->parent_id,
-	  v->alive ? "Alive" : "Dead",
+	  v->alive ? "Alive" : "Dead\t",
 	  v->parent_alive ? "Alive" : "Dead",
 	  v->exit_status);
 

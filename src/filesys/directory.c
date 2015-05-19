@@ -5,7 +5,9 @@
 #include "filesys/filesys.h"
 #include "filesys/inode.h"
 #include "threads/malloc.h"
+#include "threads/synch.h"
 
+struct lock directory_lock;
 /* A directory. */
 struct dir 
   {
@@ -23,6 +25,11 @@ struct dir_entry
 
 /* Creates a directory with space for ENTRY_CNT entries in the
    given SECTOR.  Returns true if successful, false on failure. */
+
+void directory_init()
+{
+   lock_init(&directory_lock);
+}
 bool
 dir_create (disk_sector_t sector, size_t entry_cnt) 
 {
@@ -148,9 +155,13 @@ dir_add (struct dir *dir, const char *name, disk_sector_t inode_sector)
   ASSERT (dir != NULL);
   ASSERT (name != NULL);
 
+   lock_acquire(&directory_lock);
+
   /* Check NAME for validity. */
-  if (*name == '\0' || strlen (name) > NAME_MAX)
+  if (*name == '\0' || strlen (name) > NAME_MAX){
+    lock_release(&directory_lock);
     return false;
+   }
 
   /* Check that NAME is not in use. */
   if (lookup (dir, name, NULL, NULL))
@@ -175,6 +186,7 @@ dir_add (struct dir *dir, const char *name, disk_sector_t inode_sector)
   success = inode_write_at (dir->inode, &e, sizeof e, ofs) == sizeof e;
 
  done:
+  lock_release(&directory_lock);
   return success;
 }
 
@@ -191,7 +203,8 @@ dir_remove (struct dir *dir, const char *name)
 
   ASSERT (dir != NULL);
   ASSERT (name != NULL);
-
+  lock_acquire(&directory_lock);
+  
   /* Find directory entry. */
   if (!lookup (dir, name, &e, &ofs))
     goto done;
@@ -212,6 +225,7 @@ dir_remove (struct dir *dir, const char *name)
 
  done:
   inode_close (inode);
+  lock_release(&directory_lock);
   return success;
 }
 
@@ -221,6 +235,7 @@ dir_remove (struct dir *dir, const char *name)
 bool
 dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
 {
+  lock_acquire(&directory_lock);
   struct dir_entry e;
 
   while (inode_read_at (dir->inode, &e, sizeof e, dir->pos) == sizeof e) 
@@ -229,8 +244,10 @@ dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
       if (e.in_use)
         {
           strlcpy (name, e.name, NAME_MAX + 1);
+	  lock_release(&directory_lock);
           return true;
         } 
     }
+  lock_release(&directory_lock);
   return false;
 }
