@@ -1,3 +1,4 @@
+
 #include <debug.h>
 #include <stdio.h>
 #include <string.h>
@@ -64,8 +65,7 @@ void update_table(int i UNUSED, table_value v, int aux )
 void process_print_list()
 {
   printf("ProcessID\t ParentID\t ProcessAlive\t ParentAlive\t ExitStatus \n");
-  proc_map_for_each(&process_table, print_element, 0);
-  
+  proc_map_for_each(&process_table, print_element, 0);  
 }
 
 
@@ -306,7 +306,7 @@ process_cleanup (void)
    */
 
 
-  process_print_list();
+  //process_print_list();
 
 
   table_value v = proc_map_find(&process_table, thread_current()->pid);
