@@ -90,27 +90,26 @@ bool verify_fix_length(void* start, int length)
 bool verify_variable_length(char* start)
 {
   unsigned prev_page;
-  void* adr =  pg_round_down((void*)start);
-  if(pagedir_get_page(thread_current()->pagedir, adr) == NULL)
+  if(pagedir_get_page(thread_current()->pagedir, (void*)start) == NULL)
     return false;
   else
-    prev_page = pg_no(adr);
+    prev_page = pg_no(start);
   while(1)
     {
-      if(prev_page != pg_no(adr))
+      if(prev_page != pg_no(start))
 	{   
-	  if(pagedir_get_page(thread_current()->pagedir, adr) == NULL)
+	  if(pagedir_get_page(thread_current()->pagedir, (void*)start) == NULL)
 	    return false;
-	  prev_page = pg_no(adr);
+	  prev_page = pg_no(start);
 	}
-      if(*adr == '\0')		  
+      if(*start == '\0')		  
 	return true;		  
 					 
-      adr++;
+      start++;
     }
 
+  ;// ADD YOUR CODE HERE
 }
-
 
 
 
@@ -167,11 +166,11 @@ syscall_handler (struct intr_frame *f)
       f->eax = s_read(esp);
       break;
     case SYS_OPEN :
-      /* if( (char*)esp[1] == NULL || is_kernel_vaddr (esp[1])|| !verify_variable_length(esp[1]))
+       if( (char*)esp[1] == NULL || is_kernel_vaddr (esp[1])|| !verify_variable_length(esp[1]))
 	{
 	  process_exit(-1);
 	  thread_exit();
-	  } */
+	  } 
       f->eax = s_open(esp);
       break;
     case SYS_CREATE :
@@ -184,13 +183,14 @@ syscall_handler (struct intr_frame *f)
       break;	
     case SYS_REMOVE :
       {
-	/*	if( is_kernel_vaddr (esp[1]) || (char*)esp[1] == NULL || !verify_variable_length(esp[1])) 
+	  if( is_kernel_vaddr (esp[1]) || (char*)esp[1] == NULL || !verify_variable_length(esp[1])) 
 	  f-> eax = 0;
-	  else{ */
-	if((char*)esp[1] != NULL)
+	  else{ 
+	    //if((char*)esp[1] != NULL)
 	  f->eax = s_remove(esp);
-	else
-	  f->eax = 0;
+	  }
+	  //	else
+	  // f->eax = 0;
 	break;
       } 
     case SYS_CLOSE :

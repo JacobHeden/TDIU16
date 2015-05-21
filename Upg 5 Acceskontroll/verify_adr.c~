@@ -58,7 +58,7 @@ bool verify_variable_length(char* start)
 	    return false;
 	  prev_page = pg_no(start);
 	}
-      if(*start == '\0')		  
+      if(start == "\0")		  
 	return true;		  
 					 
       start++;
