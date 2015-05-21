@@ -38,7 +38,7 @@ table_value proc_map_find(struct proc_map* m, pid k)
 int proc_map_insert(struct proc_map* m, table_value v)
 {
   lock_acquire(&m->proc_lock);
-  unsigned i = 0; 
+  unsigned i = 1; 
   while(m->content[i] != NULL && i < MAP_SIZE) //Hitta första tomma platsen
     ++i; 
 
@@ -83,7 +83,7 @@ void proc_map_for_each(struct proc_map* m,
 {
   lock_acquire(&m->proc_lock);
 
-  unsigned i = 0;
+  unsigned i = 1;
   for(; i < MAP_SIZE; ++i)
     {
       if(m->content[i] != NULL)
@@ -102,7 +102,7 @@ void proc_map_remove_if(struct proc_map* m,
   lock_acquire(&m->proc_lock);
 
   // printf("!!!!!!!!!!!!PROC_MAP_REMOVE_IF !!!!!!!!!!!!!!\n");
-  unsigned i = 0;
+  unsigned i = 1;
   for(; i < MAP_SIZE; ++i)
     {
       if(cond(i, m->content[i], aux))

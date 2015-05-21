@@ -20,13 +20,17 @@
  * (start+length). */
 bool verify_fix_length(void* start, int length)
 {
-   int* adr = (int*) pg_round_down(start);
-   while(adr <= (start+length)) 
+  int* adr = (int*) pg_round_down(start);
+   
+   while(adr < (start+length)) 
    {
      if(pagedir_get_page(thread_current()->pagedir, (void*)adr) == NULL) {		
 		return false;
 	}
-	adr += PGSIZE;
+     // printf("Test %i\n", adr);
+	adr = (char*)adr+(PGSIZE);
+	//printf("VAD IS PAGESIZE %i", PGSIZE);
+	//	printf("Test %i\n", adr);
 
    }
    return true;

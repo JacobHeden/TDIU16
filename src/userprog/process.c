@@ -254,7 +254,7 @@ process_wait (int child_id)
 
   table_value child = proc_map_find(&process_table, child_id);
  
-  if(child == NULL || cur->pid == -1) //Fins den i listan?
+  if(child == NULL) //Fins den i listan?
     {
       // if(child->alive == true)
       status = -1;
@@ -324,7 +324,7 @@ process_cleanup (void)
 
   //process_print_list();
  
-    //printf("%s: exit(%d)\n", thread_name(), status);
+    printf("%s: exit(%d)\n", thread_name(), status);
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
@@ -345,7 +345,7 @@ process_cleanup (void)
   debug("%s#%d: process_cleanup() DONE with status %d\n",
         cur->name, cur->tid, status);
 
-  process_print_list();
+  // process_print_list();
 }
 
 
@@ -357,31 +357,31 @@ bool remove_process (int k UNUSED, table_value v, int aux)
   }
 
   if(v->proc_id == aux) { //Sätter tråden till död ifall det skulle avsultas fel
-    printf("PROCID =%i\n", v->proc_id);
+    //printf("PROCID =%i\n", v->proc_id);
     v->alive = false;
   }  
 
   if(v->parent_id == aux) { //Uppdaterar förälder status. 
-    printf("PARENTID AUX\n");
+    //printf("PARENTID AUX\n");
     v->parent_alive = false;
   }
 
   if(!v->alive && v->parent_id == -1) { //Undantag för kernel tråd!!! Bra eller ej?
-    printf("KERNELTRÅD%i\n", v->proc_id);
+    //printf("KERNELTRÅD%i\n", v->proc_id);
     return true;
   }
   if(v->proc_id == aux && v->parent_alive == false) {
-    printf("SKA TAS BORTA%i\n", v->proc_id);
+    //printf("SKA TAS BORTA%i\n", v->proc_id);
     return true;
   }
   
   if(!v->alive && (!v->parent_alive)) {//Kollar alla andra 
-    printf("SKA TAS BORTB%i\n", v->proc_id);
+    //printf("SKA TAS BORTB%i\n", v->proc_id);
     return true;
   }
 
   if(v->alive || (v->parent_alive)) { //Onödig !!MEEEN
-    printf("SKA INTE TAS BORT%i\n", v->proc_id);
+    //printf("SKA INTE TAS BORT%i\n", v->proc_id);
     return false;
   }
 

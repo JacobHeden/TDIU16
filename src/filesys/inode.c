@@ -81,13 +81,13 @@ inode_create (disk_sector_t sector, off_t length)
   struct inode_disk *disk_inode = NULL;
   bool success = false;
 
-  lock_acquire(&inode_lock);
   ASSERT (length >= 0);
 
   /* If this assertion fails, the inode structure is not exactly
      one sector in size, and you should fix that. */
   ASSERT (sizeof *disk_inode == DISK_SECTOR_SIZE);
-
+  
+  lock_acquire(&inode_lock);
   disk_inode = calloc (1, sizeof *disk_inode);
   if (disk_inode != NULL)
     {
