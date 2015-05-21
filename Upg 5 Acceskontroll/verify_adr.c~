@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include "pagedir.h"
 #include "thread.h"
-
+#include <stdio.h>
 
 /* verfy_*_lenght är tänkta att användas i systemanrop som får in
  * opålitliga adresser från user mode. Operativsystemet ska inte kunna
@@ -20,13 +20,17 @@
  * (start+length). */
 bool verify_fix_length(void* start, int length)
 {
-   int* adr = (int*) pg_round_down(start);
-   while(adr <= (start+length)) 
+  int* adr = (int*) pg_round_down(start);
+   
+   while(adr < (start+length)) 
    {
-	if(pagedir_get_page(NULL, (void*)adr) == NULL) {		
+     if(pagedir_get_page(thread_current()->pagedir, (void*)adr) == NULL) {		
 		return false;
 	}
-	adr += PGSIZE;
+     // printf("Test %i\n", adr);
+	adr = (char*)adr+(PGSIZE);
+	//printf("VAD IS PAGESIZE %i", PGSIZE);
+	//	printf("Test %i\n", adr);
 
    }
    return true;
@@ -41,27 +45,24 @@ bool verify_fix_length(void* start, int length)
  * lagras på detta sätt.) */
 bool verify_variable_length(char* start)
 {
-    if(pagedir_get_page(NULL, (void*)start) == NULL)
-	return false;
-    else
-	unsigned pg = pg_no((void*)start);
+  unsigned prev_page;
+  if(pagedir_get_page(thread_current()->pagedir, (void*)start) == NULL)
+    return false;
+  else
+    prev_page = pg_no(start);
   while(1)
-	{
-		if(pg != pg_no((void*)start))
-		   {
-    		if(pagedir_get_page(NULL, (void*)start) == NULL)
-		return fals;
-
-	       if(is_end_of_string(start))		  
-		return true;		  
-				
+    {
+      if(prev_page != pg_no(start))
+	{   
+	  if(pagedir_get_page(thread_current()->pagedir, (void*)start) == NULL)
+	    return false;
+	  prev_page = pg_no(start);
 	}
-
-
-	}
-
-    
-
+      if(*start == '\0')		  
+	return true;		  
+					 
+      start++;
+    }
 
   ;// ADD YOUR CODE HERE
 }
@@ -105,14 +106,15 @@ int main(int argc, char* argv[])
     evaluate(result);
     end_evaluate_algorithm();
   }
-  
-  /* Testa algoritmen med en sträng.  
-*for (i = 0; i < TEST_CASE_COUNT; ++i)
-  *{
-    *start_evaluate_algorithm(test_case[i].start, test_case[i].length);
-    *result = verify_variable_length(test_case[i].start);
-   * evaluate(result);    
-   * end_evaluate_algorithm();
-  }*/
+  printf("\n Test 2\n");
+
+  /* Testa algoritmen med en sträng.*/  
+for (i = 0; i < TEST_CASE_COUNT; ++i)
+  {
+    start_evaluate_algorithm(test_case[i].start, test_case[i].length);
+    result = verify_variable_length(test_case[i].start);
+    evaluate(result);    
+    end_evaluate_algorithm();
+  }
   return 0;
 }

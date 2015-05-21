@@ -67,24 +67,23 @@ const int argc[] = {
 bool verify_fix_length(void* start, int length)
 {
   //Kollar så den inte är större än phys base :=))
- if(start == NULL || start >= PHYS_BASE)
-   return false;
+  if(start == NULL || start >= PHYS_BASE)
+    return false;
 
-int* adr = (int*) pg_round_down(start);
+  int* adr = (int*) pg_round_down(start);
 
 
- while(adr < (start+length)) 
-   {
-     if(pagedir_get_page(thread_current()->pagedir, (void*)adr) == NULL) {		
-       return false;
-     }
-     adr = (char*)adr+(PGSIZE);
+  while(adr < (start+length)) 
+    {
+      if(pagedir_get_page(thread_current()->pagedir, (void*)adr) == NULL) {		
+	return false;
+      }
+      adr = (char*)adr+(PGSIZE);
 
-   }
- return true;
+    }
+  return true;
    
 
- // ADD YOUR CODE HERE
 }
 
 
@@ -104,13 +103,12 @@ bool verify_variable_length(char* start)
 	    return false;
 	  prev_page = pg_no(adr);
 	}
-      if(start == '\0')		  
+      if(*adr == '\0')		  
 	return true;		  
 					 
       adr++;
     }
 
-  // ADD YOUR CODE HERE
 }
 
 
