@@ -157,28 +157,29 @@ syscall_handler (struct intr_frame *f)
       f->eax = s_write(esp);
       break;
     case SYS_READ :
-      if(is_kernel_vaddr (esp[1]) || !verify_fix_length(esp[2], esp[3]) || is_kernel_vaddr (esp[3]))
+      /* if(is_kernel_vaddr (esp[1]) || !verify_fix_length(esp[2], esp[3]) || is_kernel_vaddr (esp[3]))
 	{	
 	  process_exit(-1);
 	  thread_exit();
 
-      	}
+      	}*/
       f->eax = s_read(esp);
       break;
     case SYS_OPEN :
-       if( (char*)esp[1] == NULL || is_kernel_vaddr (esp[1])|| !verify_variable_length(esp[1]))
+      /* if( (char*)esp[1] == NULL || is_kernel_vaddr (esp[1])|| !verify_variable_length(esp[1]))
 	{
 	  process_exit(-1);
 	  thread_exit();
-	  } 
+	  }*/
       f->eax = s_open(esp);
       break;
     case SYS_CREATE :
-      if(!verify_fix_length(esp[1], esp[2]) || is_kernel_vaddr (esp[2])) 
-	{
+      /* 
+	 if( (char*)esp[1] == NULL || is_kernel_vaddr (esp[1])|| !verify_variable_length(esp[1]) || is_kernel_vaddr (esp[2])
+	 {
 	  process_exit(-1);
 	  thread_exit();
-	}
+	  } */
       f->eax = s_create(esp);
       break;	
     case SYS_REMOVE :

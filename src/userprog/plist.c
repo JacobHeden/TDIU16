@@ -2,6 +2,7 @@
 
 #include "plist.h"
 #include <stdio.h>
+
 //Initierar mapen används i threads/thread.c
 void proc_map_init(struct proc_map* m)
 {
