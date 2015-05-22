@@ -40,6 +40,8 @@ struct inode
     int open_cnt;                       /* Number of openers. */
     bool removed;                       /* True if deleted, false otherwise. */
     struct inode_disk data;             /* Inode content. */
+    //  struct semaphore read_write;               /* Semaphore added lab 21  for read and write purposes */
+    // struct lock count_lock;
   };
 
 
@@ -138,6 +140,8 @@ inode_open (disk_sector_t sector)
         }
     }
 
+  /* Kanske kan börja med locket här nere */
+
   /* Allocate memory. */
   inode = malloc (sizeof *inode);
   if (inode == NULL)
@@ -152,9 +156,12 @@ inode_open (disk_sector_t sector)
   inode->sector = sector;
   inode->open_cnt = 1;
   inode->removed = false;
-  
+  // sema_init(&inode->read_write, 1); // Added lab 21. 
+  //lock_init(&inode->count_lock);
+
   disk_read (filesys_disk, inode->sector, &inode->data);
-  lock_release(&inode_lock);
+  lock_release(&inode_lock);    
+
   return inode;
 }
 
@@ -164,7 +171,11 @@ inode_reopen (struct inode *inode)
 {
   if (inode != NULL)
   {
+    
+    // lock_acquire(&inode->count_lock);
     inode->open_cnt++;
+    // lock_release(&inode->count_lock);  
+
   }
   return inode;
 }
@@ -232,7 +243,13 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
   uint8_t *buffer = buffer_;
   off_t bytes_read = 0;
   uint8_t *bounce = NULL;
-  
+
+  /*  if(!sema_try_down (&inode->read_write)) 
+    {
+      sema_down(&inode->read_write); // Börjar skriva :)) 
+      sema_up(&inode->read_write);
+      } */
+
   while (size > 0) 
     {
       /* Disk sector to read, starting byte offset within sector. */
@@ -273,6 +290,7 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
       offset += chunk_size;
       bytes_read += chunk_size;
     }
+  
   free (bounce);
 
   return bytes_read;
@@ -290,7 +308,8 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
   const uint8_t *buffer = buffer_;
   off_t bytes_written = 0;
   uint8_t *bounce = NULL;
-
+  
+  // sema_down(&inode->read_write); // Börjar skriva :)) 
     
   while (size > 0) 
     {
@@ -339,6 +358,7 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
       offset += chunk_size;
       bytes_written += chunk_size;
     }
+  //sema_up(&inode->read_write); //Skrivit klart
   free (bounce);
 
   return bytes_written;
