@@ -1,0 +1,7 @@
+In file included from ../../filesys/directory.c:1:
+../../filesys/directory.h:17: varning: function declaration isn't a prototype
+../../filesys/directory.c:30: varning: function declaration isn't a prototype
+16+1 poster i
+17+0 poster ut
+gmake[1]: *** [check] Error 1
+gmake: *** [check] Error 2

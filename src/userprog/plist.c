@@ -20,7 +20,7 @@ table_value proc_map_find(struct proc_map* m, pid k)
   // printf("TEST");
 
 
-  if(k > 0 && k < MAP_SIZE)
+  if(k >= 1 && k < MAP_SIZE)
     {
       lock_release(&m->proc_lock);
       return m->content[k]; //Är det tomot på den postionen retuneras NULL från att init initerat mapen.

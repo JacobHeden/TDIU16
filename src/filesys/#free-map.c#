@@ -54,7 +54,7 @@ free_map_allocate (size_t cnt, disk_sector_t *sectorp)
 void
 free_map_release (disk_sector_t sector, size_t cnt)
 {
-  //Kanske behövs låsas ?? 
+  //Kanske behövs låsas så det inte blir konflikt mellan allocate. 
   ASSERT (bitmap_all (free_map, sector, cnt));
   lock_acquire(&free_map_lock);
   bitmap_set_multiple (free_map, sector, cnt, false);

@@ -334,7 +334,7 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
   const uint8_t *buffer = buffer_;
   off_t bytes_written = 0;
   uint8_t *bounce = NULL;
-  //  lock_acquire(&inode->count_lock);
+  //  lock_acquire(&inode->count_lock); DEAD LOCK :)))  )ASD)A D) ASD
    sema_down(&inode->read_write); // Börjar skriva :))           
    // lock_release(&inode->count_lock);  
 

@@ -254,7 +254,7 @@ process_wait (int child_id)
         cur->name, cur->pid, child_id);
 
   table_value child = proc_map_find(&process_table, child_id);
- 
+
   if(child == NULL) //Fins den i listan?
     {
       // if(child->alive == true)
@@ -268,6 +268,8 @@ process_wait (int child_id)
       sema_down(&child->wait); //Semadown // Wait
       
       status = child->exit_status;
+      // process_print_list();
+
       proc_map_remove(&process_table, child_id);
     }
 
@@ -307,7 +309,7 @@ process_cleanup (void)
    */
 
 
-  //process_print_list();
+  // process_print_list();
 
 
   table_value v = proc_map_find(&process_table, thread_current()->pid);
@@ -367,10 +369,10 @@ bool remove_process (int k UNUSED, table_value v, int aux)
     v->parent_alive = false;
   }
 
-  if(!v->alive && v->parent_id == -1) { //Undantag för kernel tråd!!! Bra eller ej?
+  /*  if(!v->alive && v->parent_id == -1) { //Undantag för kernel tråd!!! Bra eller ej?
     //printf("KERNELTRÅD%i\n", v->proc_id);
-    return true;
-  }
+    return true;  
+    } */
   if(v->proc_id == aux && v->parent_alive == false) {
     //printf("SKA TAS BORTA%i\n", v->proc_id);
     return true;
